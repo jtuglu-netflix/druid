@@ -21,6 +21,7 @@ package org.apache.druid.query.topn;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 
 /**
@@ -28,6 +29,7 @@ import javax.validation.constraints.Min;
 public class TopNQueryConfig
 {
   public static final int DEFAULT_MIN_TOPN_THRESHOLD = 1000;
+  public static final float DEFAULT_MAX_AGGREGATOR_DICTIONARY_SIZE_HEAP_PCT = 0.8F; // 1 GB
 
   @JsonProperty
   @Min(1)
@@ -36,5 +38,15 @@ public class TopNQueryConfig
   public int getMinTopNThreshold()
   {
     return minTopNThreshold;
+  }
+
+  @JsonProperty
+  @Min(0)
+  @Max(1)
+  private float maxDictionarySize = DEFAULT_MAX_AGGREGATOR_DICTIONARY_SIZE_HEAP_PCT;
+
+  public float getMaxDictionaryHeapSizePct()
+  {
+    return maxDictionarySize;
   }
 }

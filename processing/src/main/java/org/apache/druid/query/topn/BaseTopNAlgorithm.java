@@ -41,8 +41,12 @@ import java.util.List;
 public abstract class BaseTopNAlgorithm<DimValSelector, DimValAggregateStore, Parameters extends TopNParams>
     implements TopNAlgorithm<DimValSelector, Parameters>
 {
-  public static Aggregator[] makeAggregators(Cursor cursor, List<AggregatorFactory> aggregatorSpecs)
+  public static Aggregator[] makeAggregators(TopNQuery query, Cursor cursor, List<AggregatorFactory> aggregatorSpecs)
   {
+    long estimates = aggregatorSpecs.stream().mapToLong(AggregatorFactory::getMaxIntermediateSizeWithNulls).sum();
+    query.getAggregatorHelper().verifyHeapLimits(estimates);
+    System.out.printf("==========================CALLED QUERY WITH %s [%d], AGGREGATOR ESTIMATE [%d]==========================\n", query.getId(), query.hashCode(), estimates);
+
     Aggregator[] aggregators = new Aggregator[aggregatorSpecs.size()];
     int aggregatorIndex = 0;
     for (AggregatorFactory spec : aggregatorSpecs) {
@@ -52,8 +56,12 @@ public abstract class BaseTopNAlgorithm<DimValSelector, DimValAggregateStore, Pa
     return aggregators;
   }
 
-  protected static BufferAggregator[] makeBufferAggregators(Cursor cursor, List<AggregatorFactory> aggregatorSpecs)
+  protected static BufferAggregator[] makeBufferAggregators(TopNQuery query, Cursor cursor, List<AggregatorFactory> aggregatorSpecs)
   {
+    long estimates = aggregatorSpecs.stream().mapToLong(AggregatorFactory::getMaxIntermediateSizeWithNulls).sum();
+    query.getAggregatorHelper().verifyHeapLimits(estimates);
+    System.out.printf("==========================CALLED QUERY WITH %s [%d], AGGREGATOR ESTIMATE [%d]==========================\n", query.getId(), query.hashCode(), estimates);
+
     BufferAggregator[] aggregators = new BufferAggregator[aggregatorSpecs.size()];
     int aggregatorIndex = 0;
     for (AggregatorFactory spec : aggregatorSpecs) {

@@ -66,6 +66,7 @@ public class TopNQueryEngine
       final @Nullable TopNQueryMetrics queryMetrics
   )
   {
+    System.out.printf("==========================CALLED QUERY WITH %s [%d]==========================\n", query.getId(), query.hashCode());
     if (adapter == null) {
       throw new SegmentMissingException(
           "Null storage adapter found. Probably trying to issue a query against a segment being memory unmapped."

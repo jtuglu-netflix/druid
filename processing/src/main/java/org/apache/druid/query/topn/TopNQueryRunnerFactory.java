@@ -61,6 +61,7 @@ public class TopNQueryRunnerFactory implements QueryRunnerFactory<Result<TopNRes
   public QueryRunner<Result<TopNResultValue>> createRunner(final Segment segment)
   {
     final TopNQueryEngine queryEngine = new TopNQueryEngine(computationBufferPool);
+    System.out.printf("#################################SEGMENT#################################\n%s\n#################################SEGMENT#################################\n", segment.toString());
     return new QueryRunner<Result<TopNResultValue>>()
     {
       @Override

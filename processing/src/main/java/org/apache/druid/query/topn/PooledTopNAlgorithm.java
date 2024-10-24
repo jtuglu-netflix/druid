@@ -332,7 +332,7 @@ public class PooledTopNAlgorithm
   @Override
   protected BufferAggregator[] makeDimValAggregateStore(PooledTopNParams params)
   {
-    return makeBufferAggregators(params.getCursor(), query.getAggregatorSpecs());
+    return makeBufferAggregators(query, params.getCursor(), query.getAggregatorSpecs());
   }
 
   @Override

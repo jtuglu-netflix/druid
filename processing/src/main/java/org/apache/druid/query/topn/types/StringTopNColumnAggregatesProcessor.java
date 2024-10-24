@@ -155,7 +155,7 @@ public class StringTopNColumnAggregatesProcessor implements TopNColumnAggregates
           final Comparable<?> key = dimensionValueConverter.apply(selector.lookupName(dimIndex));
           aggs = aggregatesStore.computeIfAbsent(
               key,
-              k -> BaseTopNAlgorithm.makeAggregators(cursor, query.getAggregatorSpecs())
+              k -> BaseTopNAlgorithm.makeAggregators(query, cursor, query.getAggregatorSpecs())
           );
           rowSelector[dimIndex] = aggs;
         }
@@ -192,7 +192,7 @@ public class StringTopNColumnAggregatesProcessor implements TopNColumnAggregates
         final Comparable<?> key = dimensionValueConverter.apply(selector.lookupName(dimIndex));
         Aggregator[] aggs = aggregatesStore.computeIfAbsent(
             key,
-            k -> BaseTopNAlgorithm.makeAggregators(cursor, query.getAggregatorSpecs())
+            k -> BaseTopNAlgorithm.makeAggregators(query, cursor, query.getAggregatorSpecs())
         );
         for (Aggregator aggregator : aggs) {
           aggregator.aggregate();

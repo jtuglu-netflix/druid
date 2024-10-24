@@ -59,6 +59,7 @@ public class TopNQuery extends BaseQuery<Result<TopNResultValue>>
   private final DimFilter dimFilter;
   private final List<AggregatorFactory> aggregatorSpecs;
   private final List<PostAggregator> postAggregatorSpecs;
+  private TopNAggregatorResourceHelper aggregatorHelper;
 
   @JsonCreator
   public TopNQuery(
@@ -95,6 +96,7 @@ public class TopNQuery extends BaseQuery<Result<TopNResultValue>>
             ? ImmutableList.of()
             : postAggregatorSpecs
     );
+    this.aggregatorHelper = new TopNAggregatorResourceHelper();
 
     topNMetricSpec.verifyPreconditions(this.aggregatorSpecs, this.postAggregatorSpecs);
   }
@@ -141,6 +143,10 @@ public class TopNQuery extends BaseQuery<Result<TopNResultValue>>
   public int getThreshold()
   {
     return threshold;
+  }
+
+  public TopNAggregatorResourceHelper getAggregatorHelper() {
+    return aggregatorHelper;
   }
 
   @Nullable
@@ -221,6 +227,11 @@ public class TopNQuery extends BaseQuery<Result<TopNResultValue>>
   public TopNQuery withThreshold(int threshold)
   {
     return new TopNQueryBuilder(this).threshold(threshold).build();
+  }
+
+  public void addResourceConstraints(TopNAggregatorResourceHelper.TopNResourceConfig config)
+  {
+    this.aggregatorHelper = new TopNAggregatorResourceHelper(config);
   }
 
   @Override
