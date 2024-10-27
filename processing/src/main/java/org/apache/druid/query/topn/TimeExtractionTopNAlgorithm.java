@@ -96,7 +96,7 @@ public class TimeExtractionTopNAlgorithm extends BaseTopNAlgorithm<int[], Map<Co
 
       Aggregator[] theAggregators = aggregatesStore.computeIfAbsent(
           key,
-          k -> makeAggregators(cursor, query.getAggregatorSpecs())
+          k -> makeAggregators(query, cursor)
       );
 
       for (Aggregator aggregator : theAggregators) {
