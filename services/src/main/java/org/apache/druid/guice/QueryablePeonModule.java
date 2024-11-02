@@ -21,6 +21,7 @@ package org.apache.druid.guice;
 
 import com.google.inject.Binder;
 import org.apache.druid.initialization.DruidModule;
+import org.apache.druid.server.BaseQueryResource;
 import org.apache.druid.server.QueryResource;
 import org.apache.druid.server.metrics.QueryCountStatsProvider;
 

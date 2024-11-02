@@ -81,6 +81,7 @@ import org.apache.druid.query.lookup.LookupExtractorFactoryContainerProvider;
 import org.apache.druid.rpc.guice.ServiceClientModule;
 import org.apache.druid.segment.join.JoinableFactoryWrapper;
 import org.apache.druid.segment.writeout.SegmentWriteOutMediumModule;
+import org.apache.druid.server.BaseQueryResource;
 import org.apache.druid.server.BrokerQueryResource;
 import org.apache.druid.server.ClientInfoResource;
 import org.apache.druid.server.DruidNode;
@@ -317,7 +318,7 @@ public class ExposedAsBrokerQueryComponentSupplierWrapper implements QueryCompon
           binder.bind(BrokerQueryResource.class).in(LazySingleton.class);
           Jerseys.addResource(binder, BrokerQueryResource.class);
           binder.bind(SubqueryGuardrailHelper.class).toProvider(SubqueryGuardrailHelperProvider.class);
-          binder.bind(QueryCountStatsProvider.class).to(BrokerQueryResource.class).in(LazySingleton.class);
+          binder.bind(QueryCountStatsProvider.class).to(BaseQueryResource.class).in(LazySingleton.class);
           binder.bind(SubqueryCountStatsProvider.class).toInstance(new SubqueryCountStatsProvider());
           Jerseys.addResource(binder, BrokerResource.class);
           Jerseys.addResource(binder, ClientInfoResource.class);
