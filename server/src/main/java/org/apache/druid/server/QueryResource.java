@@ -258,17 +258,6 @@ public class QueryResource implements QueryCountStatsProvider
     }
   }
 
-  public interface QueryMetricCounter
-  {
-    void incrementSuccess();
-
-    void incrementFailed();
-
-    void incrementInterrupted();
-
-    void incrementTimedOut();
-  }
-
   private Query<?> readQuery(
       final HttpServletRequest req,
       final InputStream in,

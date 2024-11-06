@@ -28,11 +28,12 @@ import org.apache.druid.guice.annotations.Self;
 import org.apache.druid.java.util.common.StringUtils;
 import org.apache.druid.java.util.common.logger.Logger;
 import org.apache.druid.server.DruidNode;
-import org.apache.druid.server.QueryResource;
+import org.apache.druid.server.QueryMetricCounter;
 import org.apache.druid.server.QueryResponse;
 import org.apache.druid.server.QueryResultPusher;
 import org.apache.druid.server.ResponseContextConfig;
 import org.apache.druid.server.initialization.ServerConfig;
+import org.apache.druid.server.metrics.SqlQueryCountStatsProvider;
 import org.apache.druid.server.security.Access;
 import org.apache.druid.server.security.AuthorizationUtils;
 import org.apache.druid.server.security.AuthorizerMapper;
@@ -62,16 +63,17 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @Path("/druid/v2/sql/")
-public class SqlResource
+public class SqlResource implements SqlQueryCountStatsProvider
 {
   public static final String SQL_QUERY_ID_RESPONSE_HEADER = "X-Druid-SQL-Query-Id";
   public static final String SQL_HEADER_RESPONSE_HEADER = "X-Druid-SQL-Header-Included";
   public static final String SQL_HEADER_VALUE = "yes";
   private static final Logger log = new Logger(SqlResource.class);
-  public static final SqlResourceQueryMetricCounter QUERY_METRIC_COUNTER = new SqlResourceQueryMetricCounter();
+  private final SqlResourceQueryMetricCounter QUERY_METRIC_COUNTER = new SqlResourceQueryMetricCounter();
 
   private final ObjectMapper jsonMapper;
   private final AuthorizerMapper authorizerMapper;
@@ -80,6 +82,11 @@ public class SqlResource
   private final ServerConfig serverConfig;
   private final ResponseContextConfig responseContextConfig;
   private final DruidNode selfNode;
+
+  private final AtomicLong successfulQueryCount = new AtomicLong();
+  private final AtomicLong failedQueryCount = new AtomicLong();
+  private final AtomicLong interruptedQueryCount = new AtomicLong();
+  private final AtomicLong timedOutQueryCount = new AtomicLong();
 
   @Inject
   protected SqlResource(
@@ -152,30 +159,54 @@ public class SqlResource
     }
   }
 
-  /**
-   * The SqlResource only generates metrics and doesn't keep track of aggregate counts of successful/failed/interrupted
-   * queries, so this implementation is effectively just a noop.
-   */
-  private static class SqlResourceQueryMetricCounter implements QueryResource.QueryMetricCounter
+  @Override
+  public long getSuccessfulQueryCount()
+  {
+    return successfulQueryCount.get();
+  }
+
+  @Override
+  public long getFailedQueryCount()
+  {
+    return failedQueryCount.get();
+  }
+
+  @Override
+  public long getInterruptedQueryCount()
+  {
+    return interruptedQueryCount.get();
+  }
+
+  @Override
+  public long getTimedOutQueryCount()
+  {
+    return timedOutQueryCount.get();
+  }
+
+  private class SqlResourceQueryMetricCounter implements QueryMetricCounter
   {
     @Override
     public void incrementSuccess()
     {
+      successfulQueryCount.incrementAndGet();
     }
 
     @Override
     public void incrementFailed()
     {
+      failedQueryCount.incrementAndGet();
     }
 
     @Override
     public void incrementInterrupted()
     {
+      interruptedQueryCount.incrementAndGet();
     }
 
     @Override
     public void incrementTimedOut()
     {
+      timedOutQueryCount.incrementAndGet();
     }
   }
 
@@ -211,7 +242,7 @@ public class SqlResource
           jsonMapper,
           responseContextConfig,
           selfNode,
-          SqlResource.QUERY_METRIC_COUNTER,
+          SqlResource.this.QUERY_METRIC_COUNTER,
           sqlQueryId,
           MediaType.APPLICATION_JSON_TYPE,
           headers

@@ -38,48 +38,15 @@ import java.util.stream.Collectors;
 public class QueryCountStatsMonitorTest
 {
   private QueryCountStatsProvider queryCountStatsProvider;
+  private SqlQueryCountStatsProvider sqlQueryCountStatsProvider;
   private BlockingPool<ByteBuffer> mergeBufferPool;
   private ExecutorService executorService;
 
   @Before
   public void setUp()
   {
-    queryCountStatsProvider = new QueryCountStatsProvider()
-    {
-      private long successEmitCount = 0;
-      private long failedEmitCount = 0;
-      private long interruptedEmitCount = 0;
-      private long timedOutEmitCount = 0;
-
-      @Override
-      public long getSuccessfulQueryCount()
-      {
-        successEmitCount += 1;
-        return successEmitCount;
-      }
-
-      @Override
-      public long getFailedQueryCount()
-      {
-        failedEmitCount += 2;
-        return failedEmitCount;
-      }
-
-      @Override
-      public long getInterruptedQueryCount()
-      {
-        interruptedEmitCount += 3;
-        return interruptedEmitCount;
-      }
-
-      @Override
-      public long getTimedOutQueryCount()
-      {
-        timedOutEmitCount += 4;
-        return timedOutEmitCount;
-      }
-    };
-
+    queryCountStatsProvider = new StatsProviderStub();
+    sqlQueryCountStatsProvider = new StatsProviderStub();
     mergeBufferPool = new DefaultBlockingPool(() -> ByteBuffer.allocate(1024), 1);
     executorService = Executors.newSingleThreadExecutor();
   }
@@ -93,7 +60,11 @@ public class QueryCountStatsMonitorTest
   @Test
   public void testMonitor()
   {
-    final QueryCountStatsMonitor monitor = new QueryCountStatsMonitor(queryCountStatsProvider, mergeBufferPool);
+    final QueryCountStatsMonitor monitor = new QueryCountStatsMonitor(
+        queryCountStatsProvider,
+        sqlQueryCountStatsProvider,
+        mergeBufferPool
+    );
     final StubServiceEmitter emitter = new StubServiceEmitter("service", "host");
     monitor.doMonitor(emitter);
     emitter.flush();
@@ -106,11 +77,11 @@ public class QueryCountStatsMonitorTest
                                              event -> (Long) event.toMap().get("value")
                                          ));
     Assert.assertEquals(6, resultMap.size());
-    Assert.assertEquals(1L, (long) resultMap.get("query/success/count"));
-    Assert.assertEquals(2L, (long) resultMap.get("query/failed/count"));
-    Assert.assertEquals(3L, (long) resultMap.get("query/interrupted/count"));
-    Assert.assertEquals(4L, (long) resultMap.get("query/timeout/count"));
-    Assert.assertEquals(10L, (long) resultMap.get("query/count"));
+    Assert.assertEquals(2L, (long) resultMap.get("query/success/count"));
+    Assert.assertEquals(4L, (long) resultMap.get("query/failed/count"));
+    Assert.assertEquals(6L, (long) resultMap.get("query/interrupted/count"));
+    Assert.assertEquals(8L, (long) resultMap.get("query/timeout/count"));
+    Assert.assertEquals(20L, (long) resultMap.get("query/count"));
     Assert.assertEquals(0, (long) resultMap.get("mergeBuffer/pendingRequests"));
 
   }
@@ -133,7 +104,11 @@ public class QueryCountStatsMonitorTest
         }
       }
 
-      final QueryCountStatsMonitor monitor = new QueryCountStatsMonitor(queryCountStatsProvider, mergeBufferPool);
+      final QueryCountStatsMonitor monitor = new QueryCountStatsMonitor(
+          queryCountStatsProvider,
+          sqlQueryCountStatsProvider,
+          mergeBufferPool
+      );
       final StubServiceEmitter emitter = new StubServiceEmitter("DummyService", "DummyHost");
       boolean ret = monitor.doMonitor(emitter);
       Assert.assertTrue(ret);
@@ -144,6 +119,42 @@ public class QueryCountStatsMonitorTest
     }
     catch (InterruptedException e) {
       // do nothing
+    }
+  }
+
+  private static class StatsProviderStub implements QueryCountStatsProvider, SqlQueryCountStatsProvider
+  {
+    private long successEmitCount = 0;
+    private long failedEmitCount = 0;
+    private long interruptedEmitCount = 0;
+    private long timedOutEmitCount = 0;
+
+    @Override
+    public long getSuccessfulQueryCount()
+    {
+      successEmitCount += 1;
+      return successEmitCount;
+    }
+
+    @Override
+    public long getFailedQueryCount()
+    {
+      failedEmitCount += 2;
+      return failedEmitCount;
+    }
+
+    @Override
+    public long getInterruptedQueryCount()
+    {
+      interruptedEmitCount += 3;
+      return interruptedEmitCount;
+    }
+
+    @Override
+    public long getTimedOutQueryCount()
+    {
+      timedOutEmitCount += 4;
+      return timedOutEmitCount;
     }
   }
 }

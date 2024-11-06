@@ -21,6 +21,7 @@ package org.apache.druid.server.metrics;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+import io.github.resilience4j.core.lang.Nullable;
 import org.apache.druid.collections.BlockingPool;
 import org.apache.druid.guice.annotations.Merging;
 import org.apache.druid.java.util.emitter.service.ServiceEmitter;
@@ -29,21 +30,26 @@ import org.apache.druid.java.util.metrics.AbstractMonitor;
 import org.apache.druid.java.util.metrics.KeyedDiff;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class QueryCountStatsMonitor extends AbstractMonitor
 {
   private final KeyedDiff keyedDiff = new KeyedDiff();
-  private final QueryCountStatsProvider statsProvider;
+  private final List<QueryCountStatsProvider> statsProviders;
   private final BlockingPool<ByteBuffer> mergeBufferPool;
 
   @Inject
   public QueryCountStatsMonitor(
-      QueryCountStatsProvider statsProvider,
+      QueryCountStatsProvider nativeStatsProvider,
+      @Nullable SqlQueryCountStatsProvider sqlStatsProvider,
       @Merging BlockingPool<ByteBuffer> mergeBufferPool
   )
   {
-    this.statsProvider = statsProvider;
+    this.statsProviders = Stream.of(nativeStatsProvider, sqlStatsProvider).filter(Objects::nonNull).collect(Collectors.toList());
     this.mergeBufferPool = mergeBufferPool;
   }
 
@@ -51,10 +57,10 @@ public class QueryCountStatsMonitor extends AbstractMonitor
   public boolean doMonitor(ServiceEmitter emitter)
   {
     final ServiceMetricEvent.Builder builder = new ServiceMetricEvent.Builder();
-    final long successfulQueryCount = statsProvider.getSuccessfulQueryCount();
-    final long failedQueryCount = statsProvider.getFailedQueryCount();
-    final long interruptedQueryCount = statsProvider.getInterruptedQueryCount();
-    final long timedOutQueryCount = statsProvider.getTimedOutQueryCount();
+    final long successfulQueryCount = statsProviders.stream().mapToLong(QueryCountStatsProvider::getSuccessfulQueryCount).sum();
+    final long failedQueryCount = statsProviders.stream().mapToLong(QueryCountStatsProvider::getFailedQueryCount).sum();
+    final long interruptedQueryCount = statsProviders.stream().mapToLong(QueryCountStatsProvider::getInterruptedQueryCount).sum();
+    final long timedOutQueryCount = statsProviders.stream().mapToLong(QueryCountStatsProvider::getTimedOutQueryCount).sum();
 
     Map<String, Long> diff = keyedDiff.to(
         "queryCountStats",

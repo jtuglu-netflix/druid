@@ -1701,7 +1701,9 @@ public class SqlResourceTest extends CalciteTestBase
       }
     }
     Assert.assertEquals(2, success);
+    Assert.assertEquals(2, resource.getSuccessfulQueryCount());
     Assert.assertEquals(1, limited);
+    Assert.assertEquals(1, resource.getFailedQueryCount());
     Assert.assertEquals(3, testRequestLogger.getSqlQueryLogs().size());
     Assert.assertTrue(lifecycleManager.getAll(sqlQueryId).isEmpty());
   }
@@ -1737,6 +1739,7 @@ public class SqlResourceTest extends CalciteTestBase
         ""
     );
     Assert.assertTrue(lifecycleManager.getAll(sqlQueryId).isEmpty());
+    Assert.assertEquals(1, resource.getTimedOutQueryCount());
   }
 
   @Test

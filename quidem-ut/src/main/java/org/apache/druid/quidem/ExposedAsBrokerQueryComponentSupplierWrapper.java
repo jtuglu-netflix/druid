@@ -89,6 +89,7 @@ import org.apache.druid.server.initialization.ExternalStorageAccessSecurityModul
 import org.apache.druid.server.initialization.jetty.JettyServerInitializer;
 import org.apache.druid.server.initialization.jetty.JettyServerModule;
 import org.apache.druid.server.metrics.QueryCountStatsProvider;
+import org.apache.druid.server.metrics.SqlQueryCountStatsProvider;
 import org.apache.druid.server.metrics.SubqueryCountStatsProvider;
 import org.apache.druid.server.router.TieredBrokerConfig;
 import org.apache.druid.server.security.TLSCertificateCheckerModule;
@@ -98,6 +99,7 @@ import org.apache.druid.sql.calcite.util.CalciteTests;
 import org.apache.druid.sql.calcite.util.SqlTestFramework.QueryComponentSupplier;
 import org.apache.druid.sql.calcite.util.SqlTestFramework.QueryComponentSupplierDelegate;
 import org.apache.druid.sql.guice.SqlModule;
+import org.apache.druid.sql.http.SqlResource;
 import org.apache.druid.storage.StorageConnectorModule;
 import org.apache.druid.timeline.PruneLoadSpec;
 import org.eclipse.jetty.server.Server;
@@ -243,6 +245,7 @@ public class ExposedAsBrokerQueryComponentSupplierWrapper extends QueryComponent
           Jerseys.addResource(binder, BrokerQueryResource.class);
           binder.bind(SubqueryGuardrailHelper.class).toProvider(SubqueryGuardrailHelperProvider.class);
           binder.bind(QueryCountStatsProvider.class).to(BrokerQueryResource.class).in(LazySingleton.class);
+          binder.bind(SqlQueryCountStatsProvider.class).to(SqlResource.class).in(LazySingleton.class);
           binder.bind(SubqueryCountStatsProvider.class).toInstance(new SubqueryCountStatsProvider());
           Jerseys.addResource(binder, BrokerResource.class);
           Jerseys.addResource(binder, ClientInfoResource.class);

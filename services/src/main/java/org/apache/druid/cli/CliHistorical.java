@@ -59,6 +59,8 @@ import org.apache.druid.server.http.SegmentListerResource;
 import org.apache.druid.server.http.SelfDiscoveryResource;
 import org.apache.druid.server.initialization.jetty.JettyServerInitializer;
 import org.apache.druid.server.metrics.QueryCountStatsProvider;
+import org.apache.druid.server.metrics.SqlQueryCountStatsProvider;
+import org.apache.druid.sql.http.SqlResource;
 import org.apache.druid.timeline.PruneLastCompactionState;
 import org.eclipse.jetty.server.Server;
 
@@ -120,6 +122,7 @@ public class CliHistorical extends ServerRunnable
           binder.bind(ServerTypeConfig.class).toInstance(new ServerTypeConfig(ServerType.HISTORICAL));
           binder.bind(JettyServerInitializer.class).to(QueryJettyServerInitializer.class).in(LazySingleton.class);
           binder.bind(QueryCountStatsProvider.class).to(QueryResource.class);
+          binder.bind(SqlQueryCountStatsProvider.class).to(SqlResource.class);
           Jerseys.addResource(binder, QueryResource.class);
           Jerseys.addResource(binder, SegmentListerResource.class);
           Jerseys.addResource(binder, HistoricalResource.class);
