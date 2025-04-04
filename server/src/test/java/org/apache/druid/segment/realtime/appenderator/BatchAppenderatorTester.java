@@ -175,7 +175,7 @@ public class BatchAppenderatorTester implements AutoCloseable
         basePersistDirectory == null ? createNewBasePersistDirectory() : basePersistDirectory,
         false
     );
-    metrics = new SegmentGenerationMetrics();
+    metrics = new SegmentGenerationMetrics(tuningConfig.getMessageGapStatsEnabled());
 
     IndexIO indexIO = new IndexIO(objectMapper, ColumnConfig.DEFAULT);
     IndexMergerV9 indexMerger = new IndexMergerV9(

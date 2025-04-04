@@ -132,10 +132,13 @@ public class TaskRealtimeMetricsMonitor extends AbstractMonitor
       emitter.emit(builder.setMetric("ingest/events/messageGap", messageGap));
     }
 
-    if (metrics.isMessageGapStatsEnabled()) {
+    final long minMessageGap = metrics.minMessageGap();
+    final long maxMessageGap = metrics.maxMessageGap();
+    // Best-effort way to ensure parity amongst emitted metrics
+    if (minMessageGap != Long.MAX_VALUE && maxMessageGap != Long.MIN_VALUE) {
       emitter.emit(builder.setMetric("ingest/events/avgMessageGap", metrics.avgMessageGap()));
-      emitter.emit(builder.setMetric("ingest/events/minMessageGap", metrics.minMessageGap()));
-      emitter.emit(builder.setMetric("ingest/events/maxMessageGap", metrics.maxMessageGap()));
+      emitter.emit(builder.setMetric("ingest/events/minMessageGap", minMessageGap));
+      emitter.emit(builder.setMetric("ingest/events/maxMessageGap", maxMessageGap));
     }
 
     long maxSegmentHandoffTime = metrics.maxSegmentHandoffTime();

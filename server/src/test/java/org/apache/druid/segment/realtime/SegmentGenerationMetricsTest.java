@@ -35,7 +35,6 @@ public class SegmentGenerationMetricsTest
   {
     final SegmentGenerationMetrics metrics = new SegmentGenerationMetrics(messageGapAggStats);
     SegmentGenerationMetrics snapshot = metrics.snapshot();
-    assertMetricsReset(snapshot);
     assertMetricsReset(metrics);
     // invalid value
     Assert.assertTrue(0 > snapshot.maxSegmentHandoffTime());
@@ -80,8 +79,16 @@ public class SegmentGenerationMetricsTest
 
     // Latest message gap must be invalid after processing is done
     Assert.assertEquals(-1, snapshot.messageGap());
-    assertMetricsReset(snapshot);
-    assertMetricsReset(metrics);
+    // Message gap aggregate metrics are persisted past snapshot if enabled
+    if (messageGapAggStats) {
+      Assert.assertEquals(1, snapshot.numMessageGapEvent());
+      Assert.assertEquals(1, snapshot.maxMessageGap());
+      Assert.assertEquals(1, snapshot.minMessageGap());
+      Assert.assertEquals(1.0, snapshot.avgMessageGap(), 0);
+    } else {
+      assertMetricsReset(snapshot);
+      assertMetricsReset(metrics);
+    }
     // value must be invalid
     Assert.assertTrue(0 > snapshot.maxSegmentHandoffTime());
   }
@@ -117,7 +124,7 @@ public class SegmentGenerationMetricsTest
   private static void assertMetricsReset(final SegmentGenerationMetrics metrics)
   {
     Assert.assertEquals(0, metrics.numMessageGapEvent());
-    Assert.assertEquals(0, metrics.maxMessageGap());
+    Assert.assertEquals(Long.MIN_VALUE, metrics.maxMessageGap());
     Assert.assertEquals(Long.MAX_VALUE, metrics.minMessageGap());
     Assert.assertEquals(0, metrics.avgMessageGap(), 0);
   }

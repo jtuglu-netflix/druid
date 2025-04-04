@@ -58,7 +58,7 @@ public class SegmentGenerationMetrics
 
   // Message gap accounting
   private final AtomicLong minMessageGap = new AtomicLong(Long.MAX_VALUE);
-  private final AtomicLong maxMessageGap = new AtomicLong(0);
+  private final AtomicLong maxMessageGap = new AtomicLong(Long.MIN_VALUE);
   private final AtomicLong numMessageGap = new AtomicLong(0);
   private final AtomicDouble avgMessageGap = new AtomicDouble(0);
   private final boolean messageGapStatsEnabled;
@@ -66,11 +66,6 @@ public class SegmentGenerationMetrics
   public SegmentGenerationMetrics(final boolean messageGapStatsEnabled)
   {
     this.messageGapStatsEnabled = messageGapStatsEnabled;
-  }
-
-  public SegmentGenerationMetrics()
-  {
-    this(false);
   }
 
   public boolean isMessageGapStatsEnabled()
@@ -131,9 +126,9 @@ public class SegmentGenerationMetrics
   public void reportMessageGapAggregates(final long messageGap)
   {
     if (messageGapStatsEnabled) {
-      final long numEvent = this.numMessageGap.incrementAndGet();
       this.minMessageGap.getAndAccumulate(messageGap, Math::min);
       this.maxMessageGap.getAndAccumulate(messageGap, Math::max);
+      final long numEvent = this.numMessageGap.incrementAndGet();
       this.avgMessageGap.getAndUpdate(oldAvg -> oldAvg + ((messageGap - oldAvg) / numEvent));
     }
   }
@@ -261,7 +256,7 @@ public class SegmentGenerationMetrics
 
   public SegmentGenerationMetrics snapshot()
   {
-    final SegmentGenerationMetrics retVal = new SegmentGenerationMetrics();
+    final SegmentGenerationMetrics retVal = new SegmentGenerationMetrics(messageGapStatsEnabled);
     retVal.dedupCount.set(dedupCount.get());
     retVal.rowOutputCount.set(rowOutputCount.get());
     retVal.numPersists.set(numPersists.get());
@@ -303,11 +298,5 @@ public class SegmentGenerationMetrics
   private void reset()
   {
     maxSegmentHandoffTime.set(NO_EMIT_SEGMENT_HANDOFF_TIME);
-    if (messageGapStatsEnabled) {
-      numMessageGap.set(0);
-      avgMessageGap.set(0.0);
-      minMessageGap.set(Long.MAX_VALUE);
-      maxMessageGap.set(0);
-    }
   }
 }

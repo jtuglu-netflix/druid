@@ -823,13 +823,13 @@ public class IndexTask extends AbstractBatchIndexTask implements ChatHandler, Pe
       final PartitionAnalysis partitionAnalysis
   ) throws IOException, InterruptedException
   {
-    final SegmentGenerationMetrics buildSegmentsSegmentGenerationMetrics = new SegmentGenerationMetrics();
+    final IndexTuningConfig tuningConfig = ingestionSchema.getTuningConfig();
+    final SegmentGenerationMetrics buildSegmentsSegmentGenerationMetrics = new SegmentGenerationMetrics(tuningConfig.getMessageGapStatsEnabled());
     final TaskRealtimeMetricsMonitor metricsMonitor =
         TaskRealtimeMetricsMonitorBuilder.build(this, buildSegmentsSegmentGenerationMetrics, buildSegmentsMeters);
     toolbox.addMonitor(metricsMonitor);
 
     final PartitionsSpec partitionsSpec = partitionAnalysis.getPartitionsSpec();
-    final IndexTuningConfig tuningConfig = ingestionSchema.getTuningConfig();
     final long pushTimeout = tuningConfig.getPushTimeout();
 
     final SegmentAllocatorForBatch segmentAllocator;
@@ -1229,6 +1229,8 @@ public class IndexTask extends AbstractBatchIndexTask implements ChatHandler, Pe
 
     private final int numPersistThreads;
 
+    private final boolean messageGapStatsEnabled;
+
     @Nullable
     private static PartitionsSpec getPartitionsSpec(
         boolean forceGuaranteedRollup,
@@ -1296,7 +1298,8 @@ public class IndexTask extends AbstractBatchIndexTask implements ChatHandler, Pe
         @JsonProperty("maxSavedParseExceptions") @Nullable Integer maxSavedParseExceptions,
         @JsonProperty("maxColumnsToMerge") @Nullable Integer maxColumnsToMerge,
         @JsonProperty("awaitSegmentAvailabilityTimeoutMillis") @Nullable Long awaitSegmentAvailabilityTimeoutMillis,
-        @JsonProperty("numPersistThreads") @Nullable Integer numPersistThreads
+        @JsonProperty("numPersistThreads") @Nullable Integer numPersistThreads,
+        @JsonProperty("messageGapStatsEnabled") @Nullable Boolean messageGapStatsEnabled
     )
     {
       this(
@@ -1325,7 +1328,8 @@ public class IndexTask extends AbstractBatchIndexTask implements ChatHandler, Pe
           maxSavedParseExceptions,
           maxColumnsToMerge,
           awaitSegmentAvailabilityTimeoutMillis,
-          numPersistThreads
+          numPersistThreads,
+          messageGapStatsEnabled
       );
 
       Preconditions.checkArgument(
@@ -1336,7 +1340,7 @@ public class IndexTask extends AbstractBatchIndexTask implements ChatHandler, Pe
 
     private IndexTuningConfig()
     {
-      this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+      this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     private IndexTuningConfig(
@@ -1358,7 +1362,8 @@ public class IndexTask extends AbstractBatchIndexTask implements ChatHandler, Pe
         @Nullable Integer maxSavedParseExceptions,
         @Nullable Integer maxColumnsToMerge,
         @Nullable Long awaitSegmentAvailabilityTimeoutMillis,
-        @Nullable Integer numPersistThreads
+        @Nullable Integer numPersistThreads,
+        @Nullable Boolean messageGapStatsEnabled
     )
     {
       this.appendableIndexSpec = appendableIndexSpec == null ? DEFAULT_APPENDABLE_INDEX : appendableIndexSpec;
@@ -1406,6 +1411,7 @@ public class IndexTask extends AbstractBatchIndexTask implements ChatHandler, Pe
       }
       this.numPersistThreads = numPersistThreads == null ?
                                 DEFAULT_NUM_PERSIST_THREADS : Math.max(numPersistThreads, DEFAULT_NUM_PERSIST_THREADS);
+      this.messageGapStatsEnabled = messageGapStatsEnabled != null && messageGapStatsEnabled;
     }
 
     @Override
@@ -1430,7 +1436,8 @@ public class IndexTask extends AbstractBatchIndexTask implements ChatHandler, Pe
           maxSavedParseExceptions,
           maxColumnsToMerge,
           awaitSegmentAvailabilityTimeoutMillis,
-          numPersistThreads
+          numPersistThreads,
+          messageGapStatsEnabled
       );
     }
 
@@ -1649,6 +1656,7 @@ public class IndexTask extends AbstractBatchIndexTask implements ChatHandler, Pe
              maxParseExceptions == that.maxParseExceptions &&
              maxSavedParseExceptions == that.maxSavedParseExceptions &&
              numPersistThreads == that.numPersistThreads &&
+             messageGapStatsEnabled == that.messageGapStatsEnabled &&
              Objects.equals(partitionsSpec, that.partitionsSpec) &&
              Objects.equals(indexSpec, that.indexSpec) &&
              Objects.equals(indexSpecForIntermediatePersists, that.indexSpecForIntermediatePersists) &&
@@ -1679,7 +1687,8 @@ public class IndexTask extends AbstractBatchIndexTask implements ChatHandler, Pe
           maxSavedParseExceptions,
           segmentWriteOutMediumFactory,
           awaitSegmentAvailabilityTimeoutMillis,
-          numPersistThreads
+          numPersistThreads,
+          messageGapStatsEnabled
       );
     }
 
@@ -1705,6 +1714,7 @@ public class IndexTask extends AbstractBatchIndexTask implements ChatHandler, Pe
              ", segmentWriteOutMediumFactory=" + segmentWriteOutMediumFactory +
              ", awaitSegmentAvailabilityTimeoutMillis=" + awaitSegmentAvailabilityTimeoutMillis +
              ", numPersistThreads=" + numPersistThreads +
+             ", messageGapStatsEnabled=" + messageGapStatsEnabled +
              '}';
     }
   }
