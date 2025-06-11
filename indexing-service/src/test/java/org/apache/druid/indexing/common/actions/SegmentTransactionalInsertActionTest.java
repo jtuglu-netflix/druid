@@ -45,6 +45,7 @@ public class SegmentTransactionalInsertActionTest
   public TaskActionTestKit actionTestKit = new TaskActionTestKit();
 
   private static final String DATA_SOURCE = "none";
+  private static final String SUPERVISOR_ID = "supervisorId";
   private static final Interval INTERVAL = Intervals.of("2020/2020T01");
   private static final String PARTY_YEAR = "1999";
   private static final String THE_DISTANT_FUTURE = "3000";
@@ -92,13 +93,15 @@ public class SegmentTransactionalInsertActionTest
   }
 
   @Test
-  public void testTransactionalUpdateDataSourceMetadata() throws Exception
+  public void testTransactionalUpdateDataSourceMetadataWithDefaultSupervisorId() throws Exception
   {
     final Task task = NoopTask.create();
     actionTestKit.getTaskLockbox().add(task);
     acquireTimeChunkLock(TaskLockType.EXCLUSIVE, task, INTERVAL, 5000);
 
     SegmentPublishResult result1 = SegmentTransactionalInsertAction.appendAction(
+        DATA_SOURCE,
+        DATA_SOURCE,
         ImmutableSet.of(SEGMENT1),
         new ObjectMetadata(null),
         new ObjectMetadata(ImmutableList.of(1)),
@@ -110,6 +113,8 @@ public class SegmentTransactionalInsertActionTest
     Assert.assertEquals(SegmentPublishResult.ok(ImmutableSet.of(SEGMENT1)), result1);
 
     SegmentPublishResult result2 = SegmentTransactionalInsertAction.appendAction(
+        DATA_SOURCE,
+        DATA_SOURCE,
         ImmutableSet.of(SEGMENT2),
         new ObjectMetadata(ImmutableList.of(1)),
         new ObjectMetadata(ImmutableList.of(2)),
@@ -132,6 +137,50 @@ public class SegmentTransactionalInsertActionTest
   }
 
   @Test
+  public void testTransactionalUpdateDataSourceMetadataWithCustomSupervisorId() throws Exception
+  {
+    final Task task = NoopTask.create();
+    actionTestKit.getTaskLockbox().add(task);
+    acquireTimeChunkLock(TaskLockType.EXCLUSIVE, task, INTERVAL, 5000);
+
+    SegmentPublishResult result1 = SegmentTransactionalInsertAction.appendAction(
+        SUPERVISOR_ID,
+        DATA_SOURCE,
+        ImmutableSet.of(SEGMENT1),
+        new ObjectMetadata(null),
+        new ObjectMetadata(ImmutableList.of(1)),
+        null
+    ).perform(
+        task,
+        actionTestKit.getTaskActionToolbox()
+    );
+    Assert.assertEquals(SegmentPublishResult.ok(ImmutableSet.of(SEGMENT1)), result1);
+
+    SegmentPublishResult result2 = SegmentTransactionalInsertAction.appendAction(
+        SUPERVISOR_ID,
+        DATA_SOURCE,
+        ImmutableSet.of(SEGMENT2),
+        new ObjectMetadata(ImmutableList.of(1)),
+        new ObjectMetadata(ImmutableList.of(2)),
+        null
+    ).perform(
+        task,
+        actionTestKit.getTaskActionToolbox()
+    );
+    Assert.assertEquals(SegmentPublishResult.ok(ImmutableSet.of(SEGMENT2)), result2);
+
+    Assertions.assertThat(
+        actionTestKit.getMetadataStorageCoordinator()
+                     .retrieveUsedSegmentsForInterval(DATA_SOURCE, INTERVAL, Segments.ONLY_VISIBLE)
+    ).containsExactlyInAnyOrder(SEGMENT1, SEGMENT2);
+
+    Assert.assertEquals(
+        new ObjectMetadata(ImmutableList.of(2)),
+        actionTestKit.getMetadataStorageCoordinator().retrieveDataSourceMetadata(SUPERVISOR_ID)
+    );
+  }
+
+  @Test
   public void testFailTransactionalUpdateDataSourceMetadata() throws Exception
   {
     final Task task = NoopTask.create();
@@ -139,6 +188,8 @@ public class SegmentTransactionalInsertActionTest
     acquireTimeChunkLock(TaskLockType.EXCLUSIVE, task, INTERVAL, 5000);
 
     SegmentPublishResult result = SegmentTransactionalInsertAction.appendAction(
+        DATA_SOURCE,
+        DATA_SOURCE,
         ImmutableSet.of(SEGMENT1),
         new ObjectMetadata(ImmutableList.of(1)),
         new ObjectMetadata(ImmutableList.of(2)),
